@@ -1,64 +1,102 @@
-# Deploy
+# SAM Lambda API with PostgreSQL and Redis
 
-## prerequisite
-run the bootstrap step in the region you're going to deploy to
-```bash
-cdk bootstrap
+This project creates a serverless architecture with:
+- Lambda function running Node.js 18
+- API Gateway with three endpoints
+- Aurora PostgreSQL database
+- Redis ElastiCache cluster
+- VPC with public and private subnets
+
+## Prerequisites
+
+- AWS CLI installed and configured
+- SAM CLI installed
+- Node.js 18.x and npm
+
+## Project Structure
+
+```
+.
+├── template.yaml             # SAM template
+├── lambda/                   # Lambda function code
+│   ├── index.ts              # Lambda handler
+│   ├── package.json          # Dependencies
+│   └── tsconfig.json         # TypeScript config
+├── README.md                 # This file
+├── build.sh                  # run this to build
+├── deploy.sh                 # run this to build and deploy
+└── samconfig.toml            # some configuration of the stack
+
 ```
 
-## deploy the cdk
+## Setup and Deployment
+
+### 1. Build
+
+This includes npm install and tsc for the lambda code and sam build
 ```bash
-npm install
-npm run deploy
+./build.sh
 ```
 
-## update
+### 2. Deploy with SAM
 ```bash
-npm run deploy
+# Deploy (guided)
+sam deploy --guided
 ```
+
+### 3. Cleanup
+
+To remove all resources created by this project:
+
+```bash
+sam delete
+```
+
+## API Endpoints
+
+The API includes three endpoints:
+
+1. **Create Table**: `POST /db/create-table`
+   - Creates the database table if it doesn't exist
+
+2. **Insert Record**: `POST /db/insert`
+   - Request body: `{ "parameter": "your_param", "value": "your_value" }`
+   - Inserts a record into the database and caches it in Redis
+
+3. **Get Record**: `GET /db/get-record?parameter=your_param`
+   - Retrieves records by parameter value
+   - Checks Redis cache first, then falls back to database query
+
+## Testing the API
+
+You can use curl or Postman to test the API:
+
+```bash
+# Get API URL from CloudFormation Outputs
+API_URL=$(aws cloudformation describe-stack-resources --stack-name your-stack-name --query "StackResources[?LogicalResourceId=='ServerlessRestApi'].PhysicalResourceId" --output text)
 
 # Create the table
-```bash
-curl -X POST ${API_URL}db/create-table
-```
+curl -X POST ${API_URL}/Prod/db/create-table
 
-The response should look like:
-
-```json
-{
-  "message": "Table created successfully"
-}
-```
-
-# Update records
-You can test the insert endpoint by sending a POST request with the required parameters:
-
-```bash
-# Call the insert endpoint with sample data
-curl -X POST ${API_URL}db/insert \
+# Insert a record
+curl -X POST ${API_URL}/Prod/db/insert \
   -H "Content-Type: application/json" \
-  -d '{
-    "parameter": "example_param",
-    "value": "This is an example value"
-  }'
-```
-In Datadog > APM > Traces > Explorer, search by `service:aurora` and the expected trace looks like following.
-![trace of the insertion](misc/insert.png)
+  -d '{"parameter": "test_param", "value": "test_value"}'
 
-# Check records
-```bash
-curl -X GET "${API_URL}db/get-record?parameter=example_param"
+# Get records by parameter
+curl -X GET "${API_URL}/Prod/db/get-record?parameter=test_param"
 ```
+
+## Architecture Notes
+
+- The Lambda function is in a private subnet with NAT Gateway for internet access
+- The Aurora PostgreSQL and Redis are in isolated private subnets
+- Security groups control access between resources
+- Database credentials are stored in AWS Secrets Manager
+
+
+## Datadog
+
 In Datadog > APM > Traces > Explorer, search by `service:aurora` and the expected trace looks like following.
 ![trace of the insertion](misc/check.png)
 
-
-# Useful commands
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
-
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `npx cdk deploy`  deploy this stack to your default AWS account/region
-* `npx cdk diff`    compare deployed stack with current state
-* `npx cdk synth`   emits the synthesized CloudFormation template

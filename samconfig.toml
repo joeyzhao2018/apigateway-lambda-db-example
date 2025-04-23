@@ -1,0 +1,13 @@
+version = 0.1
+
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "sam-lambda-api-db"
+s3_prefix = "sam-lambda-api-db"
+region = "us-west-2"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "DatabaseUsername=\"dbadmin\" LambdaMemorySize=\"512\" NodejsRuntime=\"nodejs18.x\""
+confirm_changeset = true
+resolve_s3 = true
+image_repositories = []

@@ -6,3 +6,33 @@ node_modules
 # CDK asset staging directory
 .cdk.staging
 cdk.out
+
+# SAM build directories
+.aws-sam/
+.sam/
+samconfig.toml
+
+# Lambda builds
+lambda/dist/
+
+# OS specific files
+.DS_Store
+.DS_STORE
+Thumbs.db
+
+# Environment variables
+.env
+.env.*
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
