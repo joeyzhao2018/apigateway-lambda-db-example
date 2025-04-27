@@ -267,15 +267,22 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./lambda/dist
-      Handler: index.handler
+      Handler: /opt/nodejs/node_modules/datadog-lambda-js/handler.handler # explained in this doc: https://docs.datadoghq.com/serverless/aws_lambda/installation/nodejs/?tab=custom
       Runtime: !Ref NodejsRuntime
       MemorySize: !Ref LambdaMemorySize
       Timeout: 30
+      Layers:
+        - arn:aws:lambda:us-west-2:464622532012:layer:Datadog-Node18-x:124
+        - arn:aws:lambda:us-west-2:464622532012:layer:Datadog-Extension:77
       Environment:
         Variables:
           DB_SECRET_ARN: !Ref DatabaseSecret
           REDIS_HOST: !GetAtt RedisCluster.RedisEndpoint.Address
           REDIS_PORT: !GetAtt RedisCluster.RedisEndpoint.Port
+          DD_LAMBDA_HANDLER: index.handler
+          DD_SITE: datadoghq.com
+          DD_SERVICE: aurora # your service name, i'm using aurora for example
+          DD_API_KEY: <PUT YOUR DATADOG API KEY HERE> # your datadog api key
       VpcConfig:
         SecurityGroupIds:
           - !Ref LambdaSecurityGroup
